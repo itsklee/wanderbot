@@ -1,2 +1,8 @@
 wanderbot
- 
+
+How to build and run
+
+$ colcon build
+$ . install/setup.bash
+$ ros2 run turtlesim turtlesim_node
+$ ros2 run wanderbot wanderbot_tele
