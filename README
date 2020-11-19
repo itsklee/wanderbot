@@ -2,7 +2,14 @@ Wanderbot Sample Program for ROS2
 
 How to build and run
 
-using gazebo for  red_light_green_light.py
+using turtlesim for red_light_green_light.py
+
+$ colcon build
+$ . install/setup.bash
+$ ros2 run turtlesim turtlesim_node
+$ ros2 run wanderbot wanderbot_tele --ros-args --remap demo/cmd_demo:=turtle1/cmd_vel
+
+using gazebo for red_light_green_light.py
 
 $ colcon build
 $ . install/setup.bash
@@ -17,6 +24,13 @@ $ ros2 launch turtlebot3_gazebo turtlebot3_house.launch.py
 $ ros2 run wanderbot wanderbot_scan
 
 using gazebo for wanderbot.py
+
+$ colcon build
+$ . install/setup.bash
+$ gazebo --verbose /opt/ros/eloquent/share/gazebo_plugins/worlds/gazebo_ros_ackermann_drive_demo.world
+$ ros2 run wanderbot wanderbot_wander --ros-args --remap cmd_vel:=demo/cmd_demo
+
+using turtlebot3_gazebo for wanderbot.py
 
 $ colcon build
 $ . install/setup.bash
