@@ -9,7 +9,7 @@ class Red_light_green_light_Publisher(Node):
 
     def __init__(self):
         super().__init__('red_light_green_light')
-        self.cmd_vel_pub = self.create_publisher(Twist,'turtle1/cmd_vel',1)
+        self.cmd_vel_pub = self.create_publisher(Twist,'/demo/cmd_demo',1)
 
         self.timer_period = 0.1  # seconds
         self.time = self.create_timer(self.timer_period, self.timer_callback)
@@ -21,6 +21,7 @@ class Red_light_green_light_Publisher(Node):
 
         self.driving_forward = False
         self.light_change_time = self.timer_duration(3)
+        self.get_logger().info('Init OK')
 
 
     def timer_callback(self):

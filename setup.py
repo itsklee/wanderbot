@@ -21,6 +21,8 @@ setup(
     entry_points={
         'console_scripts': [
             'wanderbot_tele = wanderbot.red_light_green_light:main',
+            'wanderbot_scan = wanderbot.range_ahead:main',
+            'wanderbot_wander = wanderbot.wander:main',
         ],
     },
 )
