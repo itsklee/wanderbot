@@ -32,6 +32,7 @@ class Wander(Node):
         self.BACK = 2
         self.LEFT = 3
         self.WALLDISTANCE  = 0.8
+        self.turn_dir = self.LEFT
 
         self.g_range_ahead = [0.,0.,0.,0.]
         self.driving_forward = True
@@ -40,19 +41,15 @@ class Wander(Node):
 
     def scan_callback(self,  msg):
         if( len(msg.ranges) > 0):
-            self.g_range_ahead = [min(min(msg.ranges[0:44]),min(msg.ranges[315:359])), # FRONT
-            min(msg.ranges[45:134]), # RIGHT 
-            min(msg.ranges[135:224]), # BACK
-            min(msg.ranges[225:314])] # LEFT
-
-#            self.g_range_ahead = min(msg.ranges)
-#        self.get_logger().info('range min: %0.1f' % self.g_range_ahead)
-
+            self.g_range_ahead = [min(min(msg.ranges[0:15]),min(msg.ranges[344:359])), # FRONT
+            min(msg.ranges[240:300]), # RIGHT 
+            min(msg.ranges[160:200]), # BACK
+            min(msg.ranges[75:105])] # LEFT
 
     def timer_callback(self):
         bchange = False
         if self.driving_forward:
-            if ( self.g_range_ahead[self.FRONT] < self.WALLDISTANCE or self.timer_now() >= self.state_change_time ):
+            if ( self.g_range_ahead[self.FRONT] <= self.WALLDISTANCE or self.timer_now() >= self.state_change_time ):
                 self.driving_forward = False
                 self.state_change_time = self.timer_now() + self.timer_duration(1)
                 bchange = True
@@ -65,36 +62,46 @@ class Wander(Node):
         twist = Twist()
         if self.driving_forward:
             twist.linear.x = 0.3
-        else:
-            if (self.g_range_ahead[self.LEFT] > self.g_range_ahead[self.RIGHT]):
-                if ( self.g_range_ahead[self.LEFT] > self.WALLDISTANCE ):
-                    twist.angular.z = -0.3
-                    twist.linear.x = -0.01
+            if self.g_range_ahead[self.FRONT] > self.WALLDISTANCE*2 :
+                if self.turn_dir == self.LEFT :
+                    self.turn_dir = self.RIGHT
+                    self.get_logger().info('Pub forward RIGHT')
                 else:
-                    if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE):
-                        twist.linear.x = -0.3
-                        twist.angular.z = 0.0
-                    else :
-                        twist.linear.x = -0.01
-                        twist.angular.z = 0.0
-            else  :
-                if ( self.g_range_ahead[self.RIGHT] > self.WALLDISTANCE):
+                    self.turn_dir = self.LEFT
+                    self.get_logger().info('Pub forward LEFT')
+        else:
+            if (self.turn_dir == self.LEFT):
+                if ( self.g_range_ahead[self.LEFT] > self.WALLDISTANCE ):
                     twist.angular.z = 0.3
                     twist.linear.x = -0.01
+                    self.turn_dir = self.LEFT
+                    self.get_logger().info('Pub LEFT LEFT')
                 else:
                     if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE):
                         twist.linear.x = -0.3
-                        twist.angular.z = 0.0
+                        twist.angular.z = 0.03
                     else :
-                        twist.linear.x = -0.01
-                        twist.angular.z = 0.0
-
+                        twist.linear.x = -0.03
+                        twist.angular.z = 0.03
+            else  :
+                if ( self.g_range_ahead[self.RIGHT] > self.WALLDISTANCE):
+                    twist.angular.z = -0.3
+                    twist.linear.x = -0.01
+                    self.turn_dir = self.RIGHT
+                    self.get_logger().info('Pub RIGHT RIGHT')
+                else:
+                    if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE):
+                        twist.linear.x = -0.3
+                        twist.angular.z = -0.03
+                    else :
+                        twist.linear.x = -0.03
+                        twist.angular.z = -0.03
         
         self.cmd_vel_pub.publish(twist)
 
         if bchange :
-            self.get_logger().info('Publishing: "D %d S %0.1f A %0.1f RF %0.1f RL %0.1f RB %0.1f RR %0.1f"' 
-            % (self.driving_forward,twist.linear.x,twist.angular.z,self.g_range_ahead[0],self.g_range_ahead[1],self.g_range_ahead[2],self.g_range_ahead[3] ))
+            self.get_logger().info('Pub"D %d TD %d T %d S %0.1f  A %0.1f RF %0.1f RR %0.1f RB %0.1f RL %0.1f"' 
+            % (self.driving_forward,self.turn_dir,self.i,twist.linear.x,twist.angular.z,self.g_range_ahead[0],self.g_range_ahead[1],self.g_range_ahead[2],self.g_range_ahead[3] ))
         self.i += 1
 
     def timer_now(self):
