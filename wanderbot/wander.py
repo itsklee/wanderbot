@@ -71,26 +71,26 @@ class Wander(Node):
                     self.get_logger().info('Pub forward LEFT')
         else:
             if (self.turn_dir == self.LEFT):
-                if ( self.g_range_ahead[self.LEFT] > self.WALLDISTANCE/2.0 ):
+                if ( self.g_range_ahead[self.LEFT] > self.WALLDISTANCE ):
                     twist.angular.z = 0.3
                     twist.linear.x = -0.01
                     self.turn_dir = self.LEFT
                     self.get_logger().info('Pub LEFT LEFT')
                 else:
-                    if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE/2.0):
+                    if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE ):
                         twist.linear.x = -0.3
                         twist.angular.z = -0.03
                     else :
                         twist.linear.x = -0.03
                         twist.angular.z = -0.03
-            else  :
-                if ( self.g_range_ahead[self.RIGHT] > self.WALLDISTANCE/2.0):
+            else  : 
+                if ( self.g_range_ahead[self.RIGHT] > self.WALLDISTANCE ):
                     twist.angular.z = -0.3
                     twist.linear.x = -0.01
                     self.turn_dir = self.RIGHT
                     self.get_logger().info('Pub RIGHT RIGHT')
                 else:
-                    if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE/2.0):
+                    if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE ):
                         twist.linear.x = -0.3
                         twist.angular.z = 0.03
                     else :
