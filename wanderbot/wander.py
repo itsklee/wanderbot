@@ -79,10 +79,10 @@ class Wander(Node):
                 else:
                     if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE):
                         twist.linear.x = -0.3
-                        twist.angular.z = 0.03
+                        twist.angular.z = -0.03
                     else :
                         twist.linear.x = -0.03
-                        twist.angular.z = 0.03
+                        twist.angular.z = -0.03
             else  :
                 if ( self.g_range_ahead[self.RIGHT] > self.WALLDISTANCE):
                     twist.angular.z = -0.3
@@ -92,10 +92,10 @@ class Wander(Node):
                 else:
                     if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE):
                         twist.linear.x = -0.3
-                        twist.angular.z = -0.03
+                        twist.angular.z = 0.03
                     else :
                         twist.linear.x = -0.03
-                        twist.angular.z = -0.03
+                        twist.angular.z = 0.03
         
         self.cmd_vel_pub.publish(twist)
 
