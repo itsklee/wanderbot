@@ -35,6 +35,7 @@ class Wander(Node):
         self.turn_dir = self.LEFT
 
         self.g_range_ahead = [0.,0.,0.,0.]
+        self.g_range_ahead = [self.WALLDISTANCE*20,self.WALLDISTANCE*20,self.WALLDISTANCE*20,self.WALLDISTANCE*20]
         self.driving_forward = True
         self.state_change_time = 0
         self.get_logger().info('Init OK')
@@ -43,7 +44,7 @@ class Wander(Node):
         if( len(msg.ranges) > 0):
             self.g_range_ahead = [min(min(msg.ranges[0:15]),min(msg.ranges[344:359])), # FRONT
             min(msg.ranges[240:300]), # RIGHT 
-            min(msg.ranges[160:200]), # BACK
+            min(msg.ranges[150:210]), # BACK
             min(msg.ranges[75:105])] # LEFT
 
     def timer_callback(self):
@@ -73,7 +74,7 @@ class Wander(Node):
             if (self.turn_dir == self.LEFT):
                 if ( self.g_range_ahead[self.LEFT] > self.WALLDISTANCE ):
                     twist.angular.z = 0.3
-                    twist.linear.x = -0.01
+                    twist.linear.x = -0.03
                     self.turn_dir = self.LEFT
                     self.get_logger().info('Pub LEFT LEFT')
                 else:
@@ -86,7 +87,7 @@ class Wander(Node):
             else  : 
                 if ( self.g_range_ahead[self.RIGHT] > self.WALLDISTANCE ):
                     twist.angular.z = -0.3
-                    twist.linear.x = -0.01
+                    twist.linear.x = -0.03
                     self.turn_dir = self.RIGHT
                     self.get_logger().info('Pub RIGHT RIGHT')
                 else:
