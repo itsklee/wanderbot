@@ -31,7 +31,7 @@ class Wander(Node):
         self.RIGHT = 1
         self.BACK = 2
         self.LEFT = 3
-        self.WALLDISTANCE  = 0.8
+        self.WALLDISTANCE  = 1
         self.turn_dir = self.LEFT
 
         self.g_range_ahead = [0.,0.,0.,0.]
@@ -42,9 +42,9 @@ class Wander(Node):
 
     def scan_callback(self,  msg):
         if( len(msg.ranges) > 0):
-            self.g_range_ahead = [min(min(msg.ranges[0:15]),min(msg.ranges[344:359])), # FRONT
-            min(msg.ranges[240:300]), # RIGHT 
-            min(msg.ranges[150:210]), # BACK
+            self.g_range_ahead = [min(min(msg.ranges[0:15]),min(msg.ranges[345:359])), # FRONT
+            min(msg.ranges[255:285]), # RIGHT 
+            min(msg.ranges[165:195]), # BACK
             min(msg.ranges[75:105])] # LEFT
 
     def timer_callback(self):
@@ -52,17 +52,21 @@ class Wander(Node):
         if self.driving_forward:
             if ( self.g_range_ahead[self.FRONT] <= self.WALLDISTANCE or self.timer_now() >= self.state_change_time ):
                 self.driving_forward = False
-                self.state_change_time = self.timer_now() + self.timer_duration(1)
+                self.state_change_time = self.timer_now() + self.timer_duration(3)
                 bchange = True
         else :
             if self.timer_now() >= self.state_change_time:
                 self.driving_forward = True
-                self.state_change_time = self.timer_now() +  self.timer_duration(30)
+                self.state_change_time = self.timer_now() +  self.timer_duration(10)
                 bchange = True
 
         twist = Twist()
         if self.driving_forward:
-            twist.linear.x = 0.3
+            if self.g_range_ahead[self.FRONT] < self.WALLDISTANCE :
+                twist.linear.x = 0.01
+            else :
+                twist.linear.x = 0.3
+
             if self.g_range_ahead[self.FRONT] > self.WALLDISTANCE*2 :
                 if self.turn_dir == self.LEFT :
                     self.turn_dir = self.RIGHT
@@ -74,29 +78,29 @@ class Wander(Node):
             if (self.turn_dir == self.LEFT):
                 if ( self.g_range_ahead[self.LEFT] > self.WALLDISTANCE ):
                     twist.angular.z = 0.3
-                    twist.linear.x = -0.03
+                    twist.linear.x = -0.01
                     self.turn_dir = self.LEFT
                     self.get_logger().info('Pub LEFT LEFT')
                 else:
                     if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE ):
-                        twist.linear.x = -0.3
-                        twist.angular.z = -0.03
+                        twist.linear.x = -0.15
+                        twist.angular.z = 0.3
                     else :
-                        twist.linear.x = -0.03
-                        twist.angular.z = -0.03
+                        twist.linear.x = 0.01
+                        twist.angular.z = 0.03
             else  : 
                 if ( self.g_range_ahead[self.RIGHT] > self.WALLDISTANCE ):
                     twist.angular.z = -0.3
-                    twist.linear.x = -0.03
+                    twist.linear.x = -0.01
                     self.turn_dir = self.RIGHT
                     self.get_logger().info('Pub RIGHT RIGHT')
                 else:
                     if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE ):
-                        twist.linear.x = -0.3
-                        twist.angular.z = 0.03
+                        twist.linear.x = -0.15
+                        twist.angular.z = -0.3
                     else :
-                        twist.linear.x = -0.03
-                        twist.angular.z = 0.03
+                        twist.linear.x = 0.01
+                        twist.angular.z = -0.03
         
         self.cmd_vel_pub.publish(twist)
 
