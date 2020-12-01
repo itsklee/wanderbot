@@ -52,7 +52,7 @@ class Wander(Node):
         if self.driving_forward:
             if ( self.g_range_ahead[self.FRONT] <= self.WALLDISTANCE or self.timer_now() >= self.state_change_time ):
                 self.driving_forward = False
-                self.state_change_time = self.timer_now() + self.timer_duration(3)
+                self.state_change_time = self.timer_now() + self.timer_duration(2)
                 bchange = True
         else :
             if self.timer_now() >= self.state_change_time:
@@ -87,7 +87,7 @@ class Wander(Node):
                         twist.angular.z = 0.3
                     else :
                         twist.linear.x = 0.01
-                        twist.angular.z = 0.03
+                        twist.angular.z = 0.3
             else  : 
                 if ( self.g_range_ahead[self.RIGHT] > self.WALLDISTANCE ):
                     twist.angular.z = -0.3
@@ -100,7 +100,7 @@ class Wander(Node):
                         twist.angular.z = -0.3
                     else :
                         twist.linear.x = 0.01
-                        twist.angular.z = -0.03
+                        twist.angular.z = -0.3
         
         self.cmd_vel_pub.publish(twist)
 
