@@ -31,88 +31,139 @@ class Wander(Node):
         self.RIGHT = 1
         self.BACK = 2
         self.LEFT = 3
+        self.LEFTSIDE = 4
+        self.RIGHTSIDE = 5
         self.WALLDISTANCE  = 1
         self.turn_dir = self.LEFT
+
+        self.twist = Twist()
 
         self.g_range_ahead = [0.,0.,0.,0.]
         self.g_range_ahead = [self.WALLDISTANCE*20,self.WALLDISTANCE*20,self.WALLDISTANCE*20,self.WALLDISTANCE*20]
         self.driving_forward = True
-        self.state_change_time = 0
+        self.bchange = False
+        self.state_change_time = self.timer_duration(10)
         self.get_logger().info('Init OK')
+
+    def timer_callback(self):
+        self.do_wander()
+        self.timer_increase()
 
     def scan_callback(self,  msg):
         if( len(msg.ranges) > 0):
-            self.g_range_ahead = [min(min(msg.ranges[0:15]),min(msg.ranges[345:359])), # FRONT
+            self.g_range_ahead = [
+            min(min(msg.ranges[0:15]),min(msg.ranges[345:359])), # FRONT
             min(msg.ranges[255:285]), # RIGHT 
             min(msg.ranges[165:195]), # BACK
-            min(msg.ranges[75:105])] # LEFT
+            min(msg.ranges[75:105]),  # LEFT
+            min(msg.ranges[105:180]),  # LEFTSIDE
+            min(msg.ranges[180:255])   # RIGHTSIDE
+            ] 
 
-    def timer_callback(self):
-        bchange = False
+    def set_state_change_time(self,duration):
+        self.state_change_time = self.timer_now() + self.timer_duration(duration)
+        self.bchange = True
+        self.get_logger().info('Pub state_change_time %d' % duration)
+
+    def check_change_direction_time(self):
+        self.bchange = False
         if self.driving_forward:
-            if ( self.g_range_ahead[self.FRONT] <= self.WALLDISTANCE or self.timer_now() >= self.state_change_time ):
+            if (  not self.is_greater(self.FRONT,self.WALLDISTANCE) or
+                 (self.timer_now() > self.state_change_time) ):
                 self.driving_forward = False
-                self.state_change_time = self.timer_now() + self.timer_duration(2)
-                bchange = True
+                self.set_state_change_time(2)
         else :
             if self.timer_now() >= self.state_change_time:
                 self.driving_forward = True
-                self.state_change_time = self.timer_now() +  self.timer_duration(10)
-                bchange = True
+                self.set_state_change_time(10)
 
-        twist = Twist()
-        if self.driving_forward:
-            if self.g_range_ahead[self.FRONT] < self.WALLDISTANCE :
-                twist.linear.x = 0.01
+    def set_next_turn_dir(self):
+        if self.is_greater(self.FRONT,self.WALLDISTANCE*2.0):
+            if self.turn_dir == self.LEFT :
+                self.turn_dir = self.RIGHT
+            else:
+                self.turn_dir = self.LEFT
+
+    def change_forward_speed(self):
+        if self.is_greater(self.FRONT,self.WALLDISTANCE): 
+            self.set_twist(0.3,0.0)
+        else :
+            self.set_twist(0.01,0.0)
+
+        if self.bchange:
+            self.get_logger().info('Pub forward Speed %0.1f' % self.twist.linear.x)
+
+    def move_turn(self,dir):
+        if( dir == self.LEFT):
+            self.set_twist(0.01,0.3)
+            self.turn_dir = self.LEFT
+            if self.bchange :
+                self.get_logger().info('Pub LEFT LEFT')
+        else:
+            self.set_twist(0.01,-0.3)
+            self.turn_dir = self.RIGHT
+            if self.bchange :
+                self.get_logger().info('Pub RIGHT RIGHT')
+
+    def move_back(self,dir):
+        if dir == self.LEFT :
+            if self.is_greater(self.BACK,1.0):
+                self.set_twist(-0.15,0.3)
             else :
-                twist.linear.x = 0.3
+                self.set_twist(0.01,0.3)
+            if self.bchange :
+                self.get_logger().info('Pub move_back LEFT')
+        else :
+            if self.is_greater(self.BACK,1.0):
+                self.set_twist(-0.15,-0.3)
+            else :
+                self.set_twist(0.01,-0.3)
+            if self.bchange :
+                self.get_logger().info('Pub move_back RIGHT')
 
-            if self.g_range_ahead[self.FRONT] > self.WALLDISTANCE*2 :
-                if self.turn_dir == self.LEFT :
-                    self.turn_dir = self.RIGHT
-                    self.get_logger().info('Pub forward RIGHT')
-                else:
-                    self.turn_dir = self.LEFT
-                    self.get_logger().info('Pub forward LEFT')
+    def do_wander(self):
+        self.check_change_direction_time()
+        if self.driving_forward:
+            self.change_forward_speed()
+            self.set_next_turn_dir()
         else:
             if (self.turn_dir == self.LEFT):
-                if ( self.g_range_ahead[self.LEFT] > self.WALLDISTANCE and 
-                     self.g_range_ahead[self.RIGHT] > self.WALLDISTANCE/5.0 ):
-                    twist.angular.z = 0.3
-                    twist.linear.x = 0.01
-                    self.turn_dir = self.LEFT
-                    self.get_logger().info('Pub LEFT LEFT')
+                if (self.is_greater(self.LEFT,self.WALLDISTANCE) and 
+                self.is_greater(self.RIGHTSIDE,self.WALLDISTANCE*0.2)):
+                    self.move_turn(self.LEFT)
                 else:
-                    if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE ):
-                        twist.linear.x = -0.15
-                        twist.angular.z = 0.3
-                    else :
-                        twist.linear.x = 0.01
-                        twist.angular.z = 0.3
+                    self.move_back(self.LEFT)
             else  : 
-                if ( self.g_range_ahead[self.RIGHT] > self.WALLDISTANCE and  
-                     self.g_range_ahead[self.LEFT] > self.WALLDISTANCE/5.0 ):
-                    twist.angular.z = -0.3
-                    twist.linear.x = 0.01
-                    self.turn_dir = self.RIGHT
-                    self.get_logger().info('Pub RIGHT RIGHT')
+                if (self.is_greater(self.RIGHT,self.WALLDISTANCE) and 
+                self.is_greater(self.LEFTSIDE,self.WALLDISTANCE*0.2)):
+                    self.move_turn(self.RIGHT)
                 else:
-                    if (self.g_range_ahead[self.BACK] > self.WALLDISTANCE ):
-                        twist.linear.x = -0.15
-                        twist.angular.z = -0.3
-                    else :
-                        twist.linear.x = 0.01
-                        twist.angular.z = -0.3
+                    self.move_back(self.RIGHT)
         
-        self.cmd_vel_pub.publish(twist)
+        self.cmd_vel_pub.publish(self.twist)
+        if self.bchange :
+            self.get_logger().info('Pub"D %d TD %d T %d S %0.1f A %0.1f RF %0.1f RR %0.1f RB %0.1f RL %0.1f"' 
+            % (self.driving_forward,self.turn_dir,self.i,
+            self.twist.linear.x,self.twist.angular.z,
+            self.g_range_ahead[0],self.g_range_ahead[1],self.g_range_ahead[2],self.g_range_ahead[3] ))
 
-        if bchange :
-            self.get_logger().info('Pub"D %d TD %d T %d S %0.1f  A %0.1f RF %0.1f RR %0.1f RB %0.1f RL %0.1f"' 
-            % (self.driving_forward,self.turn_dir,self.i,twist.linear.x,twist.angular.z,self.g_range_ahead[0],self.g_range_ahead[1],self.g_range_ahead[2],self.g_range_ahead[3] ))
-        self.i += 1
+    def set_twist(self,speed,angle_velocity):
+        self.twist.linear.x = speed
+        self.twist.angular.z = angle_velocity
+
+    def is_greater(self,dir,distance):
+        if(dir <= len(self.g_range_ahead) and dir >= 0):
+            if self.g_range_ahead[dir] > distance :
+                return  True
+            else:
+                return False
+        return False
 
     def timer_now(self):
         return self.i
+
+    def timer_increase(self):
+        self.i += 1
 
     def timer_duration(self,dura):
         return 1. / self.timer_period * dura
